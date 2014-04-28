@@ -76,7 +76,7 @@ sub crawl
         print $current_url . ',' . $abs_url . "\n";
       }
       
-      sleep $self->requqest_gap;
+      sleep $self->request_gap;
     }
     
     sleep $self->request_gap;
