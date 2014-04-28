@@ -40,7 +40,7 @@ sub crawl
   my @broken_links = ();
   my %scanned_urls = ();
   
-  my $mech = WWW::Mechanize->new();
+  my $mech = WWW::Mechanize->new(onerror => undef);
   my $current_url = $self->base_url;
   $scanned_urls{$current_url} = 1;
   
