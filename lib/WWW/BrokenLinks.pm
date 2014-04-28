@@ -26,6 +26,13 @@ has 'debug' => (
   default => 0,
 );
 
+has 'request_gap' => (
+  is => 'ro',
+  isa => 'Int',
+  required => 0,
+  default => 1,
+);
+
 sub crawl
 {
   my $self = shift;
@@ -68,9 +75,11 @@ sub crawl
         push(@broken_links, {'source' => $current_url, 'dest' => $abs_url});
         print $current_url . ',' . $abs_url . "\n";
       }
+      
+      sleep $self->requqest_gap;
     }
     
-    sleep 1;
+    sleep $self->request_gap;
     
     $current_url = pop(@crawl_queue);
   }
