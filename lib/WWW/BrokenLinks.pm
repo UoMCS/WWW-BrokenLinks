@@ -10,6 +10,17 @@ use namespace::autoclean;
 
 our $VERSION = '0.01';
 
+has 'base_url' => (
+  is => 'ro',
+  isa => 'Str',
+  required => 1,
+);
+
+sub crawl
+{
+  
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1; # Magic true value required at end of module
