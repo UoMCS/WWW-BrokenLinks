@@ -23,7 +23,7 @@ has 'debug' => (
   is => 'ro',
   isa => 'Bool',
   required => 0,
-  default => false,
+  default => 0,
 );
 
 sub crawl
