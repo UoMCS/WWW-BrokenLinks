@@ -39,12 +39,16 @@ sub crawl
   
   while ($current_url)
   {
+    if ($self->debug) { say "Checking URL: $current_url"; }
+  
     my $response = $mech->get($current_url);
     my @links = $mech->links();
     
     for my $link (@links)
     {
       my $abs_url = URI->new_abs($link->url, $current_url)->canonical;
+      
+      if ($self->debug) { say "\tChecking URL: $abs_url"; }
       
       $response = $mech->get($abs_url);
       
