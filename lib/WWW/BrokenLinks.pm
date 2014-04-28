@@ -44,7 +44,7 @@ sub crawl
     
     for my $link (@links)
     {
-      my $abs_url = URI->new_abs($link_url, $current_url)->canonical;
+      my $abs_url = URI->new_abs($link->url, $current_url)->canonical;
       
       $response = $mech->get($abs_url);
       
