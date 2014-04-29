@@ -57,14 +57,17 @@ sub crawl
       
       if ($self->debug) { say "\tChecking URL: $abs_url"; }
       
-      $response = $mech->get($abs_url);
+      # Issue a HEAD request initially, as we don't care about the body at this point
+      $response = $mech->head($abs_url);
       
       if ($response->is_success)
       {
-        if ($abs_url =~ m/$self->base_url/ && !exists($scanned_urls{$abs_url}))
+        if ($abs_url =~ m/$self->base_url/ && !exists($scanned_urls{$abs_url}) && $response->content_type eq 'text/html')
         {
           # Local link which we haven't checked, so add to the crawl queue
           push(@crawl_queue, $abs_url);
+          
+          if ($self->debug) { say "\tQueued URL: $abs_url"; }
         }
         
         # Always mark a successful URL as scanned, even if it is not local
