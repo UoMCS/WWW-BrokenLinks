@@ -49,40 +49,47 @@ sub crawl
     if ($self->debug) { say "Checking URL: $current_url"; }
   
     my $response = $mech->get($current_url);
+    sleep $self->request_gap;
+    
     my @links = $mech->links();
     
     for my $link (@links)
     {
       my $abs_url = URI->new_abs($link->url, $current_url)->canonical;
       
-      if ($self->debug) { say "\tChecking URL: $abs_url"; }
-      
-      # Issue a HEAD request initially, as we don't care about the body at this point
-      $response = $mech->head($abs_url);
-      
-      if ($response->is_success)
+      # Only check http(s) links - ignore mailto, javascript etc.
+      if ($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https')
       {
-        if ($abs_url =~ m/$self->base_url/ && !exists($scanned_urls{$abs_url}) && $response->content_type eq 'text/html')
+        if ($self->debug) { say "\tChecking URL: $abs_url"; }
+      
+        # Issue a HEAD request initially, as we don't care about the body at this point
+        $response = $mech->head($abs_url);
+        sleep $self->request_gap;
+      
+        if ($response->is_success)
         {
-          # Local link which we haven't checked, so add to the crawl queue
-          push(@crawl_queue, $abs_url);
+          if ($abs_url =~ m/$self->base_url/ && !exists($scanned_urls{$abs_url}) && $response->content_type eq 'text/html')
+          {
+            # Local link which we haven't checked, so add to the crawl queue
+            push(@crawl_queue, $abs_url);
           
-          if ($self->debug) { say "\tQueued URL: $abs_url"; }
-        }
+            if ($self->debug) { say "\tQueued URL: $abs_url"; }
+          }
         
-        # Always mark a successful URL as scanned, even if it is not local
-        $scanned_urls{$abs_url} = 1;
+          # Always mark a successful URL as scanned, even if it is not local
+          $scanned_urls{$abs_url} = 1;
+        }
+        else
+        {
+          push(@broken_links, {'source' => $current_url, 'dest' => $abs_url});
+          print $current_url . ',' . $abs_url . "\n";
+        }
       }
       else
       {
-        push(@broken_links, {'source' => $current_url, 'dest' => $abs_url});
-        print $current_url . ',' . $abs_url . "\n";
+        if ($debug) { say "\nSkipping URL: $abs_url"; }
       }
-      
-      sleep $self->request_gap;
     }
-    
-    sleep $self->request_gap;
     
     $current_url = pop(@crawl_queue);
   }
