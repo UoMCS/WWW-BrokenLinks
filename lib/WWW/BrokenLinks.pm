@@ -11,6 +11,8 @@ use namespace::autoclean;
 use WWW::Mechanize;
 use URI;
 
+use Text::CSV;
+
 our $VERSION = '0.01';
 
 has 'base_url' => (
@@ -57,6 +59,8 @@ sub crawl
     open $output_fh, '>&', STDOUT or die "STDOUT: $!";
   }
   
+  my $csv = Text::CSV->new() or die 'Cannot use CSV: ' . Text::CSV->error_diag();
+  
   my $mech = WWW::Mechanize->new(onerror => undef);
   my $current_url = $self->base_url;
   $scanned_urls{$current_url} = 1;
@@ -102,7 +106,7 @@ sub crawl
         }
         else
         {
-          print $output_fh $response->status_line . ',' . $current_url . ',' . $abs_url . "\n";  
+          $csv->print($output_fh, [$response->status_line, $current_url, $abs_url]);
         }
       }
       else
@@ -114,7 +118,7 @@ sub crawl
     $current_url = pop(@crawl_queue);
   }
   
-  close $output_fh;
+  close $output_fh or die "Could not close output file: $!";
 }
 
 __PACKAGE__->meta->make_immutable;
