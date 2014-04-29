@@ -33,12 +33,29 @@ has 'request_gap' => (
   default => 1,
 );
 
+has 'output_file' => (
+  is => 'ro',
+  isa => 'Str',
+  required => 0,
+);
+
 sub crawl
 {
   my $self = shift;
   my @crawl_queue = ();
-  my @broken_links = ();
   my %scanned_urls = ();
+  my $output_fh;
+  
+  # Open either the specified output file or STDOUT for reading.
+  # There may be a more "Perlish" way to do this.
+  if ($self->output_file)
+  {
+    open $output_fh, '>', $self->output_file or die $self->output_file . ": $!";
+  }
+  else
+  {
+    open $output_fh, '>&', STDOUT or die "STDOUT: $!";
+  }
   
   my $mech = WWW::Mechanize->new(onerror => undef);
   my $current_url = $self->base_url;
@@ -85,8 +102,7 @@ sub crawl
         }
         else
         {
-          push(@broken_links, {'source' => $current_url, 'dest' => $abs_url});
-          print $current_url . ',' . $abs_url . "\n";
+          print $output_fh $response->status_line . ',' . $current_url . ',' . $abs_url . "\n";  
         }
       }
       else
@@ -97,6 +113,8 @@ sub crawl
     
     $current_url = pop(@crawl_queue);
   }
+  
+  close $output_fh;
 }
 
 __PACKAGE__->meta->make_immutable;
