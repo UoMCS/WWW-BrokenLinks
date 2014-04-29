@@ -57,6 +57,9 @@ sub crawl
     {
       my $abs_url = URI->new_abs($link->url, $current_url)->canonical;
       
+      # Remove the fragment of the URL
+      $abs_url->fragment(undef);
+      
       # Only check http(s) links - ignore mailto, javascript etc.
       if ($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https')
       {
