@@ -67,6 +67,8 @@ sub crawl
   
   my $csv = Text::CSV->new(\%csv_options) or die 'Cannot use CSV: ' . Text::CSV->error_diag();
   
+  $csv->print($output_fh, ['Error', 'Type', 'Source URL', 'Destination URL']);
+  
   my $mech = WWW::Mechanize->new(onerror => undef);
   my $current_url = $self->base_url;
   $scanned_urls{$current_url} = 1;
@@ -112,7 +114,7 @@ sub crawl
         }
         else
         {
-          $csv->print($output_fh, [$response->status_line, $current_url, $abs_url]);
+          $csv->print($output_fh, [$response->status_line, 'Broken Link', $current_url, $abs_url]);
         }
       }
       else
