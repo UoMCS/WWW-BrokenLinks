@@ -72,6 +72,10 @@ sub crawl
       
         if ($response->is_success)
         {
+          if ($self->debug) { say "\tSuccessful URL: $abs_url"; }
+          if ($self->debug) { say "\tContent-type: " . $response->content_type; }
+          if ($self->debug) { say "\tLocal URL: " . ($abs_url =+ m/$self->base_url/); }
+        
           if ($abs_url =~ m/$self->base_url/ && $response->content_type eq 'text/html')
           {
             # Local link which we haven't checked, so add to the crawl queue
