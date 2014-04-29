@@ -130,7 +130,7 @@ sub crawl
       
       # Only check http(s) images.
       # Do not check URLs which we have previously scanned
-      if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url})
+      if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}))
       {
         if ($self->debug) { say "\tChecking link URL: $abs_url"; }
       
