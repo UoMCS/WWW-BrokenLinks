@@ -81,6 +81,7 @@ sub crawl
     sleep $self->request_gap;
     
     my @links = $mech->links();
+    my @images = $mech->images();
     
     for my $link (@links)
     {
@@ -93,7 +94,7 @@ sub crawl
       # Do not check URLs which we have previously scanned
       if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}))
       {
-        if ($self->debug) { say "\tChecking URL: $abs_url"; }
+        if ($self->debug) { say "\tChecking link URL: $abs_url"; }
       
         # Issue a HEAD request initially, as we don't care about the body at this point
         $response = $mech->head($abs_url);
@@ -106,7 +107,7 @@ sub crawl
             # Local link which we haven't checked, so add to the crawl queue
             push(@crawl_queue, $abs_url);
           
-            if ($self->debug) { say "\tQueued URL: $abs_url"; }
+            if ($self->debug) { say "\tQueued link URL: $abs_url"; }
           }
         
           # Always mark a successful URL as scanned, even if it is not local
@@ -119,7 +120,33 @@ sub crawl
       }
       else
       {
-        if ($self->debug) { say "\tSkipping URL: $abs_url"; }
+        if ($self->debug) { say "\tSkipping link URL: $abs_url"; }
+      }
+    }
+    
+    for my $image (@images)
+    {
+      my $abs_url = URI->new_abs($image->url, $current_url)->canonical;
+      
+      # Only check http(s) images.
+      # Do not check URLs which we have previously scanned
+      if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url})
+      {
+        if ($self->debug) { say "\tChecking link URL: $abs_url"; }
+      
+        # Issue a HEAD request initially, as we don't care about the body at this point
+        $response = $mech->head($abs_url);
+        sleep $self->request_gap;
+        
+        if ($response->is_success)
+        {
+          # We've checked this image, so no need to fetch it again
+          $scanned_urls{$abs_url} = 1;
+        }
+        else
+        {
+          $csv->print($output_fh, [$response->status_line, 'Broken image', $current_url, $abs_url]);
+        }
       }
     }
     
