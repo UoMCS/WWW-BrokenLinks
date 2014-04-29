@@ -61,7 +61,8 @@ sub crawl
       $abs_url->fragment(undef);
       
       # Only check http(s) links - ignore mailto, javascript etc.
-      if ($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https')
+      # Do not check URLs which we have previously scanned
+      if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}))
       {
         if ($self->debug) { say "\tChecking URL: $abs_url"; }
       
@@ -71,7 +72,7 @@ sub crawl
       
         if ($response->is_success)
         {
-          if ($abs_url =~ m/$self->base_url/ && !exists($scanned_urls{$abs_url}) && $response->content_type eq 'text/html')
+          if ($abs_url =~ m/$self->base_url/ && $response->content_type eq 'text/html')
           {
             # Local link which we haven't checked, so add to the crawl queue
             push(@crawl_queue, $abs_url);
