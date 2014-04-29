@@ -161,4 +161,56 @@ __PACKAGE__->meta->make_immutable;
 1; # Magic true value required at end of module
 __END__
 
-# ABSTRACT: Finds broken links on a website.
+# ABSTRACT: Finds broken links (including images) on a website.
+
+==head1 SYNOPSIS
+
+  use WWW::BrokenLinks;
+  
+  my %options = (
+    'base_url' => 'http://www.example.org',
+    'debug' => 0,
+    'request_gap' => 3,
+    'output_file' => 'output.csv',
+  );
+  
+  my $bl = WWW::BrokenLinks->new(\%options);
+  $bl->crawl();
+
+=head1 DESCRIPTION
+
+This module crawls a given website for broken links, including
+images, and outputs a report in CSV format.
+
+The following functions are provided:
+
+=over
+
+=item new(\%options)
+
+Provided automatically by Moose, thsi is the constructor for the class.
+
+The following parameters can be provided as a hash reference.
+
+=over
+
+=item C<base_url> (required): The base URL to crawl. The module will not crawl above the depth specified.
+
+=item C<debug> (optional): Set to 1 to enable debugging messages (off by default).
+
+=item C<request_gap> (optional): Number of seconds to wait between requests. Defaults to 1 second.
+
+=item C<output_file> (optional): Path to file where report shoud be saved. Defaults to standard output.
+
+=back
+
+=item crawl()
+
+Crawl the given website for broken links.
+
+=back
+
+=head1 DEPENDENCIES
+
+Perl 5.14 or later is required. This module may work with earlier versions
+of Perl, but this is neither tested nor supported.
