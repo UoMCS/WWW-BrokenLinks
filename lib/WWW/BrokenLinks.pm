@@ -59,11 +59,13 @@ sub crawl
     open $output_fh, '>&', STDOUT or die "STDOUT: $!";
   }
   
-  my $csv = Text::CSV->new(
+  my %csv_options = (
     'always_quote' => 1,
     'binary' => 1,
     'eol' => "\n",
-  ) or die 'Cannot use CSV: ' . Text::CSV->error_diag();
+  );
+  
+  my $csv = Text::CSV->new(\%csv_options) or die 'Cannot use CSV: ' . Text::CSV->error_diag();
   
   my $mech = WWW::Mechanize->new(onerror => undef);
   my $current_url = $self->base_url;
