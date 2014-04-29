@@ -87,7 +87,7 @@ sub crawl
       }
       else
       {
-        if ($debug) { say "\nSkipping URL: $abs_url"; }
+        if ($self->debug) { say "\nSkipping URL: $abs_url"; }
       }
     }
     
