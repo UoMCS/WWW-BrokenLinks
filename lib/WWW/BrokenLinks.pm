@@ -46,6 +46,7 @@ sub crawl
   my $self = shift;
   my @crawl_queue = ();
   my %scanned_urls = ();
+  my %broken_urls = ();
   my $output_fh;
   
   # Open either the specified output file or STDOUT for reading.
@@ -92,7 +93,7 @@ sub crawl
       
       # Only check http(s) links - ignore mailto, javascript etc.
       # Do not check URLs which we have previously scanned
-      if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}))
+      if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}) && (!exists($broken_urls{$abs_url}) || $broken_urls{$abs_url} < 10))
       {
         if ($self->debug) { say "\tChecking link URL: $abs_url"; }
       
@@ -115,6 +116,17 @@ sub crawl
         }
         else
         {
+          # Increment broken list entry for this URL, or set to 1 if this is the
+          # first time we have seen it
+          if (exists($broken_urls{$abs_url}))
+          {
+            $broken_urls{$abs_url} += 1;
+          }
+          else
+          {
+            $broken_urls{$abs_url} = 1;
+          }
+          
           $csv->print($output_fh, [$response->status_line, 'Broken Link', $current_url, $abs_url]);
         }
       }
