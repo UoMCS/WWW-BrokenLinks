@@ -13,7 +13,7 @@ use URI;
 
 use Text::CSV;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 has 'base_url' => (
   is => 'ro',
