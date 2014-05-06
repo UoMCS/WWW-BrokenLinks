@@ -13,6 +13,8 @@ use URI;
 
 use Text::CSV;
 
+use IO::Handle;
+
 our $VERSION = '0.02';
 
 has 'base_url' => (
@@ -58,6 +60,9 @@ sub crawl
   {
     die "No output file specified\n";
   }
+  
+  # Automatically flush STDOUT, otherwise we cannot monitor progress
+  STDOUT->autoflush(1);
   
   my %csv_options = (
     'always_quote' => 1,
