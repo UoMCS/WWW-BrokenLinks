@@ -49,15 +49,14 @@ sub crawl
   my %broken_urls = ();
   my $output_fh;
   
-  # Open either the specified output file or STDOUT for reading.
-  # There may be a more "Perlish" way to do this.
+  # Open either the specified output file for writing.
   if ($self->output_file)
   {
     open $output_fh, '>', $self->output_file or die $self->output_file . ": $!";
   }
   else
   {
-    open $output_fh, '>&', STDOUT or die "STDOUT: $!";
+    die "No output file specified\n";
   }
   
   my %csv_options = (
@@ -76,7 +75,7 @@ sub crawl
   
   while ($current_url)
   {
-    if ($self->debug) { say "Checking URL: $current_url"; }
+    if ($self->debug) { print "Checking URL: $current_url\n"; }
   
     my $response = $mech->get($current_url);
     sleep $self->request_gap;
@@ -95,7 +94,7 @@ sub crawl
       # Do not check URLs which we have previously scanned
       if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}) && (!exists($broken_urls{$abs_url}) || $broken_urls{$abs_url} < 10))
       {
-        if ($self->debug) { say "\tChecking link URL: $abs_url"; }
+        if ($self->debug) { print "\tChecking link URL: $abs_url\n"; }
       
         # Issue a HEAD request initially, as we don't care about the body at this point
         $response = $mech->head($abs_url);
@@ -108,7 +107,7 @@ sub crawl
             # Local link which we haven't checked, so add to the crawl queue
             push(@crawl_queue, $abs_url);
           
-            if ($self->debug) { say "\tQueued link URL: $abs_url"; }
+            if ($self->debug) { print "\tQueued link URL: $abs_url\n"; }
           }
         
           # Always mark a successful URL as scanned, even if it is not local
@@ -127,12 +126,14 @@ sub crawl
             $broken_urls{$abs_url} = 1;
           }
           
+          if ($self->debug) { print "\tBroken link URL: $abs_url\n"; }
+          
           $csv->print($output_fh, [$response->status_line, 'Broken Link', $current_url, $abs_url]);
         }
       }
       else
       {
-        if ($self->debug) { say "\tSkipping link URL: $abs_url"; }
+        if ($self->debug) { print "\tSkipping link URL: $abs_url\n"; }
       }
     }
     
@@ -144,7 +145,7 @@ sub crawl
       # Do not check URLs which we have previously scanned
       if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}))
       {
-        if ($self->debug) { say "\tChecking link URL: $abs_url"; }
+        if ($self->debug) { print "\tChecking image URL: $abs_url\n"; }
       
         # Issue a HEAD request initially, as we don't care about the body at this point
         $response = $mech->head($abs_url);
