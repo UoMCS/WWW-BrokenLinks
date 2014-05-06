@@ -158,6 +158,8 @@ sub crawl
         }
         else
         {
+          if ($self->debug) { print "\tBroken image URL: $abs_url\n"; }
+        
           $csv->print($output_fh, [$response->status_line, 'Broken image', $current_url, $abs_url]);
         }
       }
