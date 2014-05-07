@@ -43,6 +43,17 @@ has 'output_file' => (
   required => 0,
 );
 
+has 'excluded_urls' => (
+  traits => ['Array'],
+  is => 'ro',
+  isa => 'ArrayRef[Str]',
+  required => 0,
+  default => sub { [] },
+  handles => {
+    all_excluded_urls => 'elements',
+  },
+);
+
 sub crawl
 {
   my $self = shift;
@@ -50,6 +61,7 @@ sub crawl
   my %scanned_urls = ();
   my %broken_urls = ();
   my $output_fh;
+  my @excluded_urls = $self->all_excluded_urls();
   
   # Open either the specified output file for writing.
   if ($self->output_file)
@@ -72,9 +84,13 @@ sub crawl
   
   my $csv = Text::CSV->new(\%csv_options) or die 'Cannot use CSV: ' . Text::CSV->error_diag();
   
+  # CSV headers
   $csv->print($output_fh, ['Error', 'Type', 'Source URL', 'Destination URL']);
   
+  # Don't take action when errors occur, otherwise encountering a broken
+  # link will cause the script to exit
   my $mech = WWW::Mechanize->new(onerror => undef);
+  
   my $current_url = $self->base_url;
   $scanned_urls{$current_url} = 1;
   
@@ -100,40 +116,66 @@ sub crawl
       if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}) && (!exists($broken_urls{$abs_url}) || $broken_urls{$abs_url} < 10))
       {
         if ($self->debug) { print "\tChecking link URL: $abs_url\n"; }
-      
-        # Issue a HEAD request initially, as we don't care about the body at this point
-        $response = $mech->head($abs_url);
-        sleep $self->request_gap;
-      
-        if ($response->is_success)
-        {
-          if (index($abs_url, $self->base_url) != -1 && $response->content_type eq 'text/html')
-          {
-            # Local link which we haven't checked, so add to the crawl queue
-            push(@crawl_queue, $abs_url);
-          
-            if ($self->debug) { print "\tQueued link URL: $abs_url\n"; }
-          }
         
-          # Always mark a successful URL as scanned, even if it is not local
-          $scanned_urls{$abs_url} = 1;
+        my $is_excluded = 0;
+        
+        foreach my $excluded_url (@excluded_urls)
+        {
+          if (index($abs_url, $excluded_url) == 0)
+          {
+            $is_excluded = 1;
+            if ($self->debug) { print "\tMatched URL: $excluded_url\n"; }
+            last;
+          }
+        }
+        
+        if (!$is_excluded)
+        {
+          # Issue a HEAD request initially, as we don't care about the body at this point
+          $response = $mech->head($abs_url);
+          sleep $self->request_gap;
+        
+          my $final_url = $response->request()->uri();
+   
+          if ($response->is_success)
+          {
+            if (index($final_url, $self->base_url) != -1 && $response->content_type eq 'text/html' && !exists($scanned_urls{$abs_url}))
+            {
+              # Local link which we haven't checked, so add to the crawl queue
+              push(@crawl_queue, $abs_url);
+          
+              if ($self->debug) { print "\tQueued link URL: $abs_url\n"; }
+            }
+            else
+            {
+              if ($self->debug) { print "\tSkipping link URL: $abs_url\n"; }
+            }
+        
+            # Always mark a successful URL as scanned, even if it is not local
+            $scanned_urls{$abs_url} = 1;
+            $scanned_urls{$final_url} = 1;
+          }
+          else
+          { 
+            # Increment broken list entry for this URL, or set to 1 if this is the
+            # first time we have seen it
+            if (exists($broken_urls{$abs_url}))
+            {
+              $broken_urls{$abs_url} += 1;
+            }
+            else
+            {
+              $broken_urls{$abs_url} = 1;
+            }
+          
+            if ($self->debug) { print "\tBroken link URL: $abs_url\n"; }
+          
+            $csv->print($output_fh, [$response->status_line, 'Broken Link', $current_url, $abs_url]);
+          }
         }
         else
         {
-          # Increment broken list entry for this URL, or set to 1 if this is the
-          # first time we have seen it
-          if (exists($broken_urls{$abs_url}))
-          {
-            $broken_urls{$abs_url} += 1;
-          }
-          else
-          {
-            $broken_urls{$abs_url} = 1;
-          }
-          
-          if ($self->debug) { print "\tBroken link URL: $abs_url\n"; }
-          
-          $csv->print($output_fh, [$response->status_line, 'Broken Link', $current_url, $abs_url]);
+          if ($self->debug) { print "\tExcluded URL: $abs_url\n"; }
         }
       }
       else
@@ -155,6 +197,8 @@ sub crawl
         # Issue a HEAD request initially, as we don't care about the body at this point
         $response = $mech->head($abs_url);
         sleep $self->request_gap;
+        
+        $abs_url = $response->request()->uri();
         
         if ($response->is_success)
         {
