@@ -139,10 +139,10 @@ sub crawl
    
           if ($response->is_success)
           {
-            if (index($final_url, $self->base_url) != -1 && $response->content_type eq 'text/html' && !exists($scanned_urls{$abs_url}))
+            if (index($final_url, $self->base_url) != -1 && $response->content_type eq 'text/html' && !exists($scanned_urls{$abs_url}) && !exists($scanned_urls{$final_url}))
             {
               # Local link which we haven't checked, so add to the crawl queue
-              push(@crawl_queue, $abs_url);
+              push(@crawl_queue, $final_url);
           
               if ($self->debug) { print "\tQueued link URL: $abs_url\n"; }
             }
