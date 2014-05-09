@@ -266,6 +266,8 @@ The following parameters can be provided as a hash reference.
 
 =item C<output_file> (optional): Path to file where report shoud be saved. Defaults to standard output.
 
+=item C<excluded_urls> (optional): Array reference of URLs to excluded. Defaults to an empty array.
+
 =back
 
 =item crawl()
