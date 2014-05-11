@@ -15,7 +15,7 @@ use Text::CSV;
 
 use IO::Handle;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 has 'base_url' => (
   is => 'ro',
