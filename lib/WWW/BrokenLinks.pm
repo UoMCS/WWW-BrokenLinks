@@ -264,7 +264,7 @@ The following parameters can be provided as a hash reference.
 
 =item C<request_gap> (optional): Number of seconds to wait between requests. Defaults to 1 second.
 
-=item C<output_file> (optional): Path to file where report shoud be saved. Defaults to standard output.
+=item C<output_file> (required): Path to file where report shoud be saved.
 
 =item C<excluded_urls> (optional): Array reference of URLs to excluded. Defaults to an empty array.
 
