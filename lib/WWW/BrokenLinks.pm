@@ -15,7 +15,7 @@ use Text::CSV;
 
 use IO::Handle;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 has 'base_url' => (
   is => 'ro',
@@ -62,7 +62,7 @@ sub crawl
   my %broken_urls = ();
   my $output_fh;
   my @excluded_urls = $self->all_excluded_urls();
-  
+
   # Open either the specified output file for writing.
   if ($self->output_file)
   {
@@ -72,53 +72,53 @@ sub crawl
   {
     die "No output file specified\n";
   }
-  
+
   # Automatically flush STDOUT, otherwise we cannot monitor progress
   STDOUT->autoflush(1);
-  
+
   my %csv_options = (
     'always_quote' => 1,
     'binary' => 1,
     'eol' => "\n",
   );
-  
+
   my $csv = Text::CSV->new(\%csv_options) or die 'Cannot use CSV: ' . Text::CSV->error_diag();
-  
+
   # CSV headers
   $csv->print($output_fh, ['Error', 'Type', 'Source URL', 'Destination URL']);
-  
+
   # Don't take action when errors occur, otherwise encountering a broken
   # link will cause the script to exit
   my $mech = WWW::Mechanize->new(onerror => undef);
-  
+
   my $current_url = $self->base_url;
   $scanned_urls{$current_url} = 1;
-  
+
   while ($current_url)
   {
     if ($self->debug) { print "Checking URL: $current_url\n"; }
-  
+
     my $response = $mech->get($current_url);
     sleep $self->request_gap;
-    
+
     my @links = $mech->links();
     my @images = $mech->images();
-    
+
     for my $link (@links)
     {
       my $abs_url = URI->new_abs($link->url, $current_url)->canonical;
-      
+
       # Remove the fragment of the URL
       $abs_url->fragment(undef);
-      
+
       # Only check http(s) links - ignore mailto, javascript etc.
       # Do not check URLs which we have previously scanned
       if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}) && (!exists($broken_urls{$abs_url}) || $broken_urls{$abs_url} < 10))
       {
         if ($self->debug) { print "\tChecking link URL: $abs_url\n"; }
-        
+
         my $is_excluded = 0;
-        
+
         foreach my $excluded_url (@excluded_urls)
         {
           if (index($abs_url, $excluded_url) == 0)
@@ -128,35 +128,35 @@ sub crawl
             last;
           }
         }
-        
+
         if (!$is_excluded)
         {
           # Issue a HEAD request initially, as we don't care about the body at this point
           $response = $mech->head($abs_url);
           sleep $self->request_gap;
-        
+
           my $final_url = $response->request()->uri();
-   
+
           if ($response->is_success)
           {
             if (index($final_url, $self->base_url) != -1 && $response->content_type eq 'text/html' && !exists($scanned_urls{$abs_url}) && !exists($scanned_urls{$final_url}))
             {
               # Local link which we haven't checked, so add to the crawl queue
               push(@crawl_queue, $final_url);
-          
+
               if ($self->debug) { print "\tQueued link URL: $abs_url\n"; }
             }
             else
             {
               if ($self->debug) { print "\tSkipping link URL: $abs_url\n"; }
             }
-        
+
             # Always mark a successful URL as scanned, even if it is not local
             $scanned_urls{$abs_url} = 1;
             $scanned_urls{$final_url} = 1;
           }
           else
-          { 
+          {
             # Increment broken list entry for this URL, or set to 1 if this is the
             # first time we have seen it
             if (exists($broken_urls{$abs_url}))
@@ -167,9 +167,9 @@ sub crawl
             {
               $broken_urls{$abs_url} = 1;
             }
-          
+
             if ($self->debug) { print "\tBroken link URL: $abs_url\n"; }
-          
+
             $csv->print($output_fh, [$response->status_line, 'Broken Link', $current_url, $abs_url]);
           }
         }
@@ -183,23 +183,23 @@ sub crawl
         if ($self->debug) { print "\tSkipping link URL: $abs_url\n"; }
       }
     }
-    
+
     for my $image (@images)
     {
       my $abs_url = URI->new_abs($image->url, $current_url)->canonical;
-      
+
       # Only check http(s) images.
       # Do not check URLs which we have previously scanned
       if (($abs_url->scheme eq 'http' || $abs_url->scheme eq 'https') && !exists($scanned_urls{$abs_url}))
       {
         if ($self->debug) { print "\tChecking image URL: $abs_url\n"; }
-      
+
         # Issue a HEAD request initially, as we don't care about the body at this point
         $response = $mech->head($abs_url);
         sleep $self->request_gap;
-        
+
         $abs_url = $response->request()->uri();
-        
+
         if ($response->is_success)
         {
           # We've checked this image, so no need to fetch it again
@@ -208,15 +208,15 @@ sub crawl
         else
         {
           if ($self->debug) { print "\tBroken image URL: $abs_url\n"; }
-        
+
           $csv->print($output_fh, [$response->status_line, 'Broken image', $current_url, $abs_url]);
         }
       }
     }
-    
+
     $current_url = pop(@crawl_queue);
   }
-  
+
   close $output_fh or die "Could not close output file: $!";
 }
 
@@ -230,14 +230,14 @@ __END__
 ==head1 SYNOPSIS
 
   use WWW::BrokenLinks;
-  
+
   my %options = (
     'base_url' => 'http://www.example.org',
     'debug' => 0,
     'request_gap' => 3,
     'output_file' => 'output.csv',
   );
-  
+
   my $bl = WWW::BrokenLinks->new(\%options);
   $bl->crawl();
 
